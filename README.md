@@ -82,9 +82,31 @@ Deploy the React-based web frontend:
 
 ---
 
+## Deployment (Bonus)
+
+To host the web version of this suite online, follow these professional deployment steps:
+
+### 1. Backend (Render.com)
+- Connect your GitHub repository to **Render**.
+- Choose **Web Service**.
+- Build Command: **sh build.sh**
+- Start Command: **gunicorn config.wsgi:application**
+- Add Environment Variables:
+  - **PYTHON_VERSION**: 3.10.x
+  - **RENDER**: True
+  - **SECRET_KEY**: (A long random string)
+
+### 2. Frontend (Vercel.com)
+- Connect your GitHub repository to **Vercel**.
+- Select the **frontend** directory.
+- Add Environment Variable:
+  - **VITE_API_URL**: (Your Render Web Service URL + /api)
+
+---
+
 ## Submission Details
 
-- **Demo Video**: *https://drive.google.com/drive/folders/1-yLYtLLzbTLQ-IYTTW448-TzqxUIaK9u*
+- **Demo Video**: *https://drive.google.com/file/d/1kbJy55hcEgc0zcgSg9HaK-NCisSGSn97/view?usp=sharing*
 - **Developer**: **Soumyodyuti Ray**
 - **Project Scope**: *FOSSEE Technical Assignment*
 - **System Version**: ***1.0.0***

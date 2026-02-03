@@ -1,12 +1,14 @@
 from pathlib import Path
 
+import os
+
 # BASE DIRECTORY
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY
-SECRET_KEY = 'django-insecure-change-this-later'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-later')
+DEBUG = os.environ.get('RENDER', 'False') == 'False'  # Debug ON locally, OFF on Render
+ALLOWED_HOSTS = ['*'] # Simplified for deployment; Render will handle routing
 
 # APPLICATIONS
 INSTALLED_APPS = [
@@ -28,8 +30,9 @@ INSTALLED_APPS = [
 
 # MIDDLEWARE
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # ✅ MUST BE AT TOP
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # ✅ Serve static files in production
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -89,6 +92,8 @@ USE_TZ = True
 
 # STATIC FILES
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # DEFAULT PRIMARY KEY
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
