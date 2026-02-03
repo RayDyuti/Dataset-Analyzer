@@ -34,27 +34,39 @@ The system utilizes a ***unified backend*** to serve diverse clients, ensuring d
 Prepare the API environment by navigating to the backend directory and executing the following:
 
 **cd backend**
+
 **python -m venv venv**
+
 **.\venv\Scripts\activate**
+
 **pip install -r requirements.txt**
+
 **python manage.py migrate**
+
 **python manage.py createsuperuser**
+
 **python manage.py runserver**
 
 ### 2. Desktop Application
 Initialize the native desktop client:
 
 **cd desktop-app**
+
 **python -m venv venv_desktop**
+
 **.\venv_desktop\Scripts\activate**
+
 **pip install -r requirements.txt**
+
 **python main.py**
 
 ### 3. Web Interface
 Deploy the React-based web frontend:
 
 **cd frontend**
+
 **npm install**
+
 **npm run dev**
 
 ---
@@ -72,7 +84,7 @@ Deploy the React-based web frontend:
 
 ## Submission Details
 
-- **Demo Video**: https://drive.google.com/drive/folders/1-yLYtLLzbTLQ-IYTTW448-TzqxUIaK9u
+- **Demo Video**: *https://drive.google.com/drive/folders/1-yLYtLLzbTLQ-IYTTW448-TzqxUIaK9u*
 - **Developer**: **Soumyodyuti Ray**
 - **Project Scope**: *FOSSEE Technical Assignment*
 - **System Version**: ***1.0.0***
