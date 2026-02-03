@@ -106,7 +106,7 @@ To host the web version of this suite online, follow these professional deployme
 
 ## Submission Details
 
-- **Live Web App**: *[PASTE_VERCEL_LINK_HERE]*
+- **Live Web App**: *https://dataset-analyzer-qwl9.vercel.app/dashboard*
 - **Admin Dashboard**: *https://fossee-backend-3m56.onrender.com/admin*
 - **Demo Video**: *https://drive.google.com/file/d/1kbJy55hcEgc0zcgSg9HaK-NCisSGSn97/view?usp=sharing*
 - **Developer**: **Soumyodyuti Ray**
