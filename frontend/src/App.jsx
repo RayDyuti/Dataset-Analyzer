@@ -4,7 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
-import DatasetSummary from "./pages/DatasetSummary";
+import DatasetSummary from "./pages/DataSetSummary";
 
 import ProtectedLayout from "./layouts/ProtectedLayout";
 import MainLayout from "./layouts/MainLayout";
