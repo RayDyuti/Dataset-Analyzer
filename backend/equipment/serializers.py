@@ -38,6 +38,8 @@ class DatasetSummarySerializer(serializers.Serializer):
     average_pressure = serializers.FloatField(allow_null=True)
     average_temperature = serializers.FloatField(allow_null=True)
     equipment_type_distribution = serializers.DictField()
+    anomalies = serializers.ListField(child=serializers.DictField())
+    insights = serializers.CharField()
 
 
 class EquipmentScatterSerializer(serializers.ModelSerializer):

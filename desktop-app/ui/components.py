@@ -71,7 +71,7 @@ from datetime import datetime
 class ClickableCard(QFrame):
     clicked = pyqtSignal(int) # Emits dataset ID
 
-    def __init__(self, dataset_id, title, date_str, equipment_count):
+    def __init__(self, dataset_id, title, date_str, equipment_count, anomaly_count=0):
         super().__init__()
         self.dataset_id = dataset_id
         self.setCursor(Qt.PointingHandCursor)
@@ -81,20 +81,33 @@ class ClickableCard(QFrame):
                 border-radius: 15px;
             }
         """)
-        self.setFixedSize(280, 180)
+        self.setFixedSize(280, 200)
         
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         
+        title_top = QHBoxLayout()
         title_lbl = QLabel(title)
         title_lbl.setWordWrap(True)
         title_lbl.setStyleSheet("font-size: 18px; font-weight: bold; color: white; background: transparent;")
+        title_top.addWidget(title_lbl)
         
+        if anomaly_count > 0:
+            anomaly_lbl = QLabel(f"⚠️ {anomaly_count}")
+            anomaly_lbl.setStyleSheet("""
+                background-color: #f6e05e; 
+                color: #744210; 
+                padding: 2px 8px; 
+                border-radius: 4px; 
+                font-weight: 800; 
+                font-size: 11px;
+            """)
+            title_top.addStretch()
+            title_top.addWidget(anomaly_lbl)
+
         # Format Date
         formatted_date = date_str
         try:
-            # Assuming format like "2023-10-25 14:30:00" or similar
-            # If input is ISO with T "2023-10-25T14:30:00.123Z", we handle it
             clean_date = date_str.replace("T", " ").split(".")[0]
             dt_obj = datetime.strptime(clean_date, "%Y-%m-%d %H:%M:%S")
             formatted_date = dt_obj.strftime("%b %d, %Y • %H:%M")
@@ -107,7 +120,7 @@ class ClickableCard(QFrame):
         count_lbl = QLabel(f"{equipment_count} Equipments")
         count_lbl.setStyleSheet("font-size: 14px; color: #4fd1c5; font-weight: bold; margin-top: 10px; background: transparent;")
         
-        layout.addWidget(title_lbl)
+        layout.addLayout(title_top)
         layout.addWidget(date_lbl)
         layout.addStretch()
         layout.addWidget(count_lbl)
@@ -141,6 +154,8 @@ class ClickableCard(QFrame):
             self.clicked.emit(self.dataset_id)
 
 
+from settings_manager import settings_manager
+
 class StatBox(QFrame):
     def __init__(self, label, value):
         super().__init__()
@@ -153,13 +168,17 @@ class StatBox(QFrame):
         """)
         layout = QVBoxLayout()
         
-        lbl = QLabel(label)
-        lbl.setAlignment(Qt.AlignCenter)
-        lbl.setStyleSheet("color: rgba(255,255,255,0.7); font-size: 12px; background: transparent;")
+        # Determine unit type from label
+        unit = settings_manager.get_unit(label)
+        converted_val = settings_manager.convert_value(value, label)
         
-        val = QLabel(str(value))
+        lbl = QLabel(f"{label} ({unit})" if unit else label)
+        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setStyleSheet("color: rgba(255,255,255,0.7); font-size: 11px; background: transparent;")
+        
+        val = QLabel(str(converted_val))
         val.setAlignment(Qt.AlignCenter)
-        val.setStyleSheet("color: white; font-size: 22px; font-weight: bold; background: transparent;")
+        val.setStyleSheet("color: white; font-size: 20px; font-weight: bold; background: transparent;")
         
         layout.addWidget(lbl)
         layout.addWidget(val)

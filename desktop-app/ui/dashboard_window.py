@@ -52,8 +52,25 @@ class DashboardWindow(QWidget):
         """)
         logout_btn.clicked.connect(self.logoutSignal.emit)
 
+        self.unit_btn = QPushButton("U: Metric")
+        self.unit_btn.setCursor(Qt.PointingHandCursor)
+        self.unit_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(79, 209, 197, 0.2); 
+                color: #4fd1c5; 
+                padding: 10px 15px; 
+                border-radius: 8px; 
+                font-weight: bold;
+                border: 1px solid rgba(79, 209, 197, 0.3);
+            }
+        """)
+        from settings_manager import settings_manager
+        self.unit_btn.clicked.connect(self.on_toggle_units)
+
         header_layout.addLayout(title_box)
         header_layout.addStretch()
+        header_layout.addWidget(self.unit_btn)
+        header_layout.addSpacing(10)
         header_layout.addWidget(logout_btn)
         main_layout.addLayout(header_layout)
 
@@ -124,17 +141,25 @@ class DashboardWindow(QWidget):
                 uploaded = ds["uploaded_at"].replace("T", " ").split(".")[0]
                 summary = ds.get("summary", {})
                 count = summary.get("total_equipment", 0)
+                anomalies = summary.get("anomalies", [])
                 
                 card = ClickableCard(
                     ds["dataset_id"],
                     ds["dataset_name"],
                     uploaded,
-                    count
+                    count,
+                    anomaly_count=len(anomalies)
                 )
                 card.clicked.connect(self.on_card_click)
                 self.flow_layout.addWidget(card)
         else:
             self.toast.show_message(f"Failed to load: {result['error']}", is_error=True)
+
+    def on_toggle_units(self):
+        from settings_manager import settings_manager
+        new_system = settings_manager.toggle_units()
+        self.unit_btn.setText(f"U: {new_system.capitalize()}")
+        self.load_data()
 
     def on_card_click(self, dataset_id):
         self.viewDetailsSignal.emit(dataset_id)

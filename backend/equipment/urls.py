@@ -6,6 +6,7 @@ from .views import (
     DatasetSummaryView,
     DatasetHistoryView,
     DatasetReportPDFView,
+    DatasetExportExcelView,
 )
 
 urlpatterns = [
@@ -41,5 +42,12 @@ urlpatterns = [
         "datasets/<int:dataset_id>/scatter/",
         DatasetScatterView.as_view(),
         name="dataset-scatter",
+    ),
+    
+    # 📗 Excel export
+    path(
+        "export/excel/<int:dataset_id>/",
+        DatasetExportExcelView.as_view(),
+        name="dataset-excel-export",
     ),
 ]
