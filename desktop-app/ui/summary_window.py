@@ -105,17 +105,66 @@ class SummaryWindow(QWidget):
         """)
         self.download_btn.clicked.connect(self.download_report)
         
+        self.unit_btn = QPushButton("Units")
+        self.unit_btn.setCursor(Qt.PointingHandCursor)
+        self.unit_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(79, 209, 197, 0.2); 
+                color: #4fd1c5; 
+                padding: 10px 15px; 
+                border-radius: 8px; 
+                font-weight: bold;
+                border: 1px solid rgba(79, 209, 197, 0.3);
+            }
+        """)
+        from settings_manager import settings_manager
+        self.unit_btn.clicked.connect(self.on_toggle_units)
+
         header.addWidget(back_btn)
         header.addSpacing(20)
         header.addLayout(header_text)
         header.addStretch()
+        header.addWidget(self.unit_btn)
+        header.addSpacing(10)
         header.addWidget(self.download_btn)
         self.layout.addLayout(header)
+
+        # 🤖 AI Insight Box
+        self.insight_frame = QFrame()
+        self.insight_frame.setStyleSheet("""
+            QFrame {
+                background-color: rgba(79, 209, 197, 0.1);
+                border: 1px solid rgba(79, 209, 197, 0.3);
+                border-radius: 12px;
+            }
+        """)
+        insight_layout = QVBoxLayout(self.insight_frame)
+        insight_header = QLabel("💡 System Intelligence Brief")
+        insight_header.setStyleSheet("color: #4fd1c5; font-weight: bold; font-size: 14px; background: transparent;")
+        self.insight_text = QLabel("Analyzing data...")
+        self.insight_text.setWordWrap(True)
+        self.insight_text.setStyleSheet("color: rgba(255,255,255,0.9); font-size: 14px; background: transparent; line-height: 1.5;")
+        insight_layout.addWidget(insight_header)
+        insight_layout.addWidget(self.insight_text)
+        self.layout.addWidget(self.insight_frame)
 
         # Stats Grid
         self.stats_layout = QHBoxLayout()
         self.stats_layout.setSpacing(15)
         self.layout.addLayout(self.stats_layout)
+
+        # ⚠️ Anomaly Section
+        self.anomaly_box = QWidget()
+        self.anomaly_vbox = QVBoxLayout(self.anomaly_box)
+        self.anomaly_vbox.setContentsMargins(0, 0, 0, 0)
+        self.anomaly_title = QLabel("⚠️ Operational Anomalies")
+        self.anomaly_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #fca5a5; margin-top: 10px;")
+        self.anomaly_vbox.addWidget(self.anomaly_title)
+        
+        from ui.flow_layout import FlowLayout
+        self.anomaly_grid = FlowLayout()
+        self.anomaly_vbox.addLayout(self.anomaly_grid)
+        self.layout.addWidget(self.anomaly_box)
 
         # Charts Area
         charts_header = QLabel("Visual Analysis")
@@ -162,11 +211,57 @@ class SummaryWindow(QWidget):
 
         data = summary_res["data"]
          
+        # Populate AI Insights
+        self.insight_text.setText(data.get("insights", "No insights generated for this dataset."))
+
         # Populate Stats using StatBox
         self.stats_layout.addWidget(StatBox("Total Equipment", data.get("total_equipment", 0)))
         self.stats_layout.addWidget(StatBox("Avg Flowrate", f"{data.get('average_flowrate', 0):.2f}"))
         self.stats_layout.addWidget(StatBox("Avg Pressure", f"{data.get('average_pressure', 0):.2f}"))
         self.stats_layout.addWidget(StatBox("Avg Temperature", f"{data.get('average_temperature', 0):.2f}"))
+
+        # Populate Anomalies
+        anomalies = data.get("anomalies", [])
+        self.clear_layout(self.anomaly_grid)
+        if not anomalies:
+            self.anomaly_box.hide()
+        else:
+            self.anomaly_box.show()
+            for ano in anomalies:
+                ano_card = QFrame()
+                ano_card.setStyleSheet(f"""
+                    QFrame {{
+                        background-color: rgba(239, 68, 68, 0.1); 
+                        border: 1px solid rgba(239, 68, 68, 0.2); 
+                        border-radius: 8px;
+                        padding: 10px;
+                    }}
+                """)
+                ano_layout = QVBoxLayout(ano_card)
+                
+                header = QHBoxLayout()
+                sev = "Critical" if "Critical" in str(ano.get('severity')) else "Warning"
+                color = "#ef4444" if sev == "Critical" else "#f59e0b"
+                badge = QLabel(sev.upper())
+                badge.setStyleSheet(f"background: {color}; color: white; padding: 2px 4px; border-radius: 3px; font-size: 9px; font-weight: bold;")
+                
+                name = QLabel(ano.get('equipment_name', 'Unknown'))
+                name.setStyleSheet("font-weight: bold; color: white; font-size: 13px;")
+                header.addWidget(badge)
+                header.addWidget(name)
+                header.addStretch()
+                
+                detail = QLabel(f"Abnormal {ano.get('metric')}: {ano.get('value')}")
+                detail.setStyleSheet("color: #fca5a5; font-size: 12px;")
+                reason = QLabel(ano.get('reason'))
+                reason.setStyleSheet("color: rgba(255,255,255,0.6); font-size: 11px; font-style: italic;")
+                reason.setWordWrap(True)
+                
+                ano_layout.addLayout(header)
+                ano_layout.addWidget(detail)
+                ano_layout.addWidget(reason)
+                
+                self.anomaly_grid.addWidget(ano_card)
 
         # Render Bar Chart
         if "equipment_type_distribution" in data:
@@ -185,16 +280,17 @@ class SummaryWindow(QWidget):
             points = scatter_res["data"]["points"]
             canvas = MplCanvas(self, width=5, height=4, dpi=100)
             
-            x_vals = [p['x'] for p in points] # Temp
-            y_vals = [p['y'] for p in points] # Pressure
+            from settings_manager import settings_manager
+            x_vals = [float(settings_manager.convert_value(p['x'], "temp")) for p in points]
+            y_vals = [float(settings_manager.convert_value(p['y'], "pressure")) for p in points]
             
             types = list(set([p['equipment_type'] for p in points]))
             colors = [types.index(p['equipment_type']) for p in points]
             
             scatter = canvas.axes.scatter(x_vals, y_vals, c=colors, cmap='cool', alpha=0.9, s=50, edgecolors='white', linewidth=0.5)
-            canvas.axes.set_title("Pressure vs Temperature")
-            canvas.axes.set_xlabel("Temperature")
-            canvas.axes.set_ylabel("Pressure")
+            canvas.axes.set_title(f"Pressure ({settings_manager.get_unit('pressure')}) vs Temp ({settings_manager.get_unit('temp')})")
+            canvas.axes.set_xlabel(f"Temperature ({settings_manager.get_unit('temp')})")
+            canvas.axes.set_ylabel(f"Pressure ({settings_manager.get_unit('pressure')})")
             self.scatter_layout.addWidget(canvas)
 
     def clear_layout(self, layout):
@@ -202,6 +298,11 @@ class SummaryWindow(QWidget):
             child = layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
+
+    def on_toggle_units(self):
+        from settings_manager import settings_manager
+        settings_manager.toggle_units()
+        self.load_data(self.dataset_id)
 
     def download_report(self):
         if not self.dataset_id:

@@ -26,24 +26,72 @@ from .validators import validate_equipment_row
 # --------------------------------------------------
 # 🔹 Helper function
 # --------------------------------------------------
+# --------------------------------------------------
+# 🔹 Helper function (V2: Intelligent Analytics)
+# --------------------------------------------------
 def build_dataset_summary(equipments):
-    return {
-        "total_equipment": equipments.count(),
-        "average_flowrate": equipments.aggregate(
-            avg=models.Avg("flowrate")
-        )["avg"],
-        "average_pressure": equipments.aggregate(
-            avg=models.Avg("pressure")
-        )["avg"],
-        "average_temperature": equipments.aggregate(
-            avg=models.Avg("temperature")
-        )["avg"],
-        "equipment_type_distribution": {
-            item["equipment_type"]: item["count"]
-            for item in equipments.values("equipment_type")
-            .annotate(count=models.Count("id"))
-        },
+    if not equipments.exists():
+        return {}
+
+    # Convert to DataFrame for powerful analysis
+    df = pd.DataFrame(list(equipments.values(
+        "equipment_name", "equipment_type", "flowrate", "pressure", "temperature"
+    )))
+
+    # 1. Base Stats
+    summary = {
+        "total_equipment": len(df),
+        "average_flowrate": df["flowrate"].mean(),
+        "average_pressure": df["pressure"].mean(),
+        "average_temperature": df["temperature"].mean(),
+        "equipment_type_distribution": df["equipment_type"].value_counts().to_dict(),
+        "anomalies": [],
+        "insights": ""
     }
+
+    # 2. Anomaly Detection (Z-Score > 3)
+    metrics = ["flowrate", "pressure", "temperature"]
+    anomalies = []
+
+    for metric in metrics:
+        mean = df[metric].mean()
+        std = df[metric].std()
+        
+        if std > 0:
+            # Find outliers
+            outliers = df[abs(df[metric] - mean) > (3 * std)]
+            for _, row in outliers.iterrows():
+                anomalies.append({
+                    "equipment_name": row["equipment_name"],
+                    "metric": metric.capitalize(),
+                    "value": row[metric],
+                    "severity": "Critical" if abs(row[metric] - mean) > (4 * std) else "Warning",
+                    "reason": f"Value is significantly {'higher' if row[metric] > mean else 'lower'} than average."
+                })
+
+    summary["anomalies"] = anomalies[:10] # Limit to top 10
+
+    # 3. "AI" Insight Generator (NLP-Lite)
+    insight_parts = []
+    
+    # Check for overall health
+    if not anomalies:
+        insight_parts.append("Overall system health is Optimal. No statistical anomalies detected across active sensors.")
+    else:
+        insight_parts.append(f"Detected {len(anomalies)} operational anomalies. Critical attention required for equipment highlighted in red.")
+
+    # Check for Temperature Trends
+    if df["temperature"].mean() > 40:
+        insight_parts.append("Warning: High average thermal baseline detected (>40°C). Consider inspecting cooling subsystems.")
+    
+    # Check for Pressure consistency
+    p_std = df["pressure"].std() if len(df) > 1 else 0
+    if p_std > (df["pressure"].mean() * 0.2):
+        insight_parts.append("Caution: High pressure variance detected. This may indicate unstable valve operations or sensor calibration issues.")
+
+    summary["insights"] = " ".join(insight_parts)
+
+    return summary
 
 
 # --------------------------------------------------
@@ -478,4 +526,44 @@ class DatasetReportPDFView(APIView):
             canvas.restoreState()
 
         doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
+        return response
+
+
+# --------------------------------------------------
+# 🔹 Dataset Excel Export (V2 Detail)
+# --------------------------------------------------
+class DatasetExportExcelView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, dataset_id):
+        dataset = get_object_or_404(
+            Dataset,
+            id=dataset_id,
+            user=request.user,
+        )
+
+        equipments = Equipment.objects.filter(dataset=dataset)
+
+        if not equipments.exists():
+            return Response(
+                {"error": "No equipment data available."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Create DataFrame
+        df = pd.DataFrame(list(equipments.values(
+            "equipment_name", "equipment_type", "flowrate", "pressure", "temperature"
+        )))
+        
+        # Rename columns for professional look
+        df.columns = ["Equipment Name", "Type", "Flowrate (m3/h)", "Pressure (Pa)", "Temperature (C)"]
+
+        # Prepare Response
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="dataset_{dataset.id}_export.xlsx"'
+
+        # Export to Excel
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Sensor Data')
+
         return response

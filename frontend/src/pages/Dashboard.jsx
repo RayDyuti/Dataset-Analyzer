@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
+import { useSettings } from "../context/SettingsContext";
+import Skeleton from "../components/Skeleton";
 import api from "../api/axios";
 
 const Dashboard = () => {
   const { user, token, loading: authLoading } = useAuth();
+  const { convertValue, getUnit } = useSettings();
   const navigate = useNavigate();
 
   const [history, setHistory] = useState([]);
@@ -71,7 +73,23 @@ const Dashboard = () => {
       <h2 style={styles.sectionTitle}>Recent Dataset Summaries</h2>
 
       {loading ? (
-        <p style={styles.centerText}>Loading dataset summaries...</p>
+        <div style={styles.cardGrid}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={styles.card}>
+              <Skeleton height="30px" width="60%" style={{ marginBottom: "1rem" }} />
+              <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
+                <Skeleton height="35px" borderRadius="10px" />
+                <Skeleton height="35px" borderRadius="10px" />
+              </div>
+              <div style={styles.statsGrid}>
+                <Skeleton height="50px" borderRadius="12px" />
+                <Skeleton height="50px" borderRadius="12px" />
+                <Skeleton height="50px" borderRadius="12px" />
+                <Skeleton height="50px" borderRadius="12px" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : history.length === 0 ? (
         <p style={styles.centerText}>No datasets available.</p>
       ) : (
@@ -82,7 +100,14 @@ const Dashboard = () => {
             return (
               <div key={dataset.dataset_id} style={styles.card} className="dashboard-card">
                 <div style={styles.cardHeader}>
-                  <h3 style={styles.cardTitle}>{dataset.dataset_name}</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <h3 style={styles.cardTitle}>{dataset.dataset_name}</h3>
+                    {summary.anomalies?.length > 0 && (
+                      <span style={styles.anomalyBadge}>
+                        ⚠️ {summary.anomalies.length} Anomalies
+                      </span>
+                    )}
+                  </div>
                   <span style={styles.timestamp}>
                     {(() => {
                       const d = new Date(dataset.uploaded_at);
@@ -112,28 +137,16 @@ const Dashboard = () => {
                 <div style={styles.statsGrid}>
                   <Stat label="Total Equipment" value={summary.total_equipment} />
                   <Stat
-                    label="Avg Flowrate"
-                    value={
-                      summary.average_flowrate != null
-                        ? summary.average_flowrate.toFixed(2)
-                        : "N/A"
-                    }
+                    label={`Avg Flowrate (${getUnit("flowrate")})`}
+                    value={convertValue(summary.average_flowrate, "flowrate")}
                   />
                   <Stat
-                    label="Avg Pressure"
-                    value={
-                      summary.average_pressure != null
-                        ? summary.average_pressure.toFixed(2)
-                        : "N/A"
-                    }
+                    label={`Avg Pressure (${getUnit("pressure")})`}
+                    value={convertValue(summary.average_pressure, "pressure")}
                   />
                   <Stat
-                    label="Avg Temperature"
-                    value={
-                      summary.average_temperature != null
-                        ? summary.average_temperature.toFixed(2)
-                        : "N/A"
-                    }
+                    label={`Avg Temp (${getUnit("temperature")})`}
+                    value={convertValue(summary.average_temperature, "temperature")}
                   />
                 </div>
               </div>
@@ -179,19 +192,20 @@ const styles = {
   centerText: { textAlign: "center", opacity: 0.8 },
   cardGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-    gap: "2rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "1.5rem",
   },
   card: {
     background: "rgba(255,255,255,0.09)",
     borderRadius: "20px",
-    padding: "1.6rem",
+    padding: window.innerWidth <= 768 ? "1.2rem" : "1.6rem",
   },
   cardHeader: {
     display: "flex",
+    flexDirection: window.innerWidth <= 768 ? "column" : "row",
+    alignItems: window.innerWidth <= 768 ? "flex-start" : "center",
     justifyContent: "space-between",
-    alignItems: "center",
-    gap: "1.5rem",
+    gap: "1rem",
   },
   cardTitle: { fontSize: "1.25rem", fontWeight: 600 },
   timestamp: { fontSize: "0.75rem", opacity: 0.7 },
@@ -217,6 +231,15 @@ const styles = {
   },
   statLabel: { fontSize: "0.72rem", opacity: 0.7 },
   statValue: { fontSize: "1.15rem", fontWeight: 600 },
+  anomalyBadge: {
+    fontSize: "0.65rem",
+    background: "rgba(239, 68, 68, 0.2)",
+    color: "#fca5a5",
+    padding: "0.2rem 0.6rem",
+    borderRadius: "6px",
+    fontWeight: 700,
+    width: "fit-content",
+  },
 };
 
 export default Dashboard;

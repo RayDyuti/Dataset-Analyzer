@@ -21,7 +21,7 @@ const styles = {
   container: {
     width: "100%",
     maxWidth: "1280px",
-    padding: "2.5rem",
+    padding: window.innerWidth <= 768 ? "1.5rem" : "2.5rem",
   },
 };
 
