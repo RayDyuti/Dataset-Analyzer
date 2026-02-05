@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import Skeleton from "../components/Skeleton";
 import api from "../api/axios";

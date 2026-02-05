@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import publicApi from "../api/publicAxios";
+import { publicApi } from "../api/axios";
 
 function Register() {
   const navigate = useNavigate();
